@@ -8,48 +8,55 @@
           <!-- 确保侧边栏始终位于地图上方 -->
           <div class="overlay-sidebar" style="margin-top: 50px">
             <el-row class="tac">
-              <el-col>
+              <el-col :span="12">
+                <h5 class="mb-2">Default colors</h5>
                 <el-menu
-                  active-text-color="#ffd04b"
-                  background-color="#545c64"
-                  class="el-menu-vertical-demo"
                   default-active="2"
-                  text-color="#fff"
+                  class="el-menu-vertical-demo"
                   @open="handleOpen"
                   @close="handleClose"
                 >
+                  <!-- 项目管理 -->
                   <el-sub-menu index="1">
                     <template #title>
                       <el-icon><location /></el-icon>
-                      <span>Navigator One</span>
+                      <span>项目管理</span>
                     </template>
-                    <el-menu-item-group title="Group One">
-                      <el-menu-item index="1-1">item one</el-menu-item>
-                      <el-menu-item index="1-2">item two</el-menu-item>
-                    </el-menu-item-group>
-                    <el-menu-item-group title="Group Two">
-                      <el-menu-item index="1-3">item three</el-menu-item>
-                    </el-menu-item-group>
-                    <el-sub-menu index="1-4">
-                      <template #title>item four</template>
-                      <el-menu-item index="1-4-1">item one</el-menu-item>
+                    <el-menu-item index="1-1" @click="showCreateProject">
+                      新建项目
+                    </el-menu-item>
+                    <el-sub-menu index="1-2">
+                      <template #title>项目列表</template>
+                      <el-menu-item index="1-2-1">项目一</el-menu-item>
+                      <el-menu-item index="1-2-2">项目二</el-menu-item>
                     </el-sub-menu>
                   </el-sub-menu>
-                  <el-menu-item index="2">
-                    <el-icon><icon-menu /></el-icon>
-                    <span>Navigator Two</span>
-                  </el-menu-item>
-                  <el-menu-item index="3" disabled>
-                    <el-icon><document /></el-icon>
-                    <span>Navigator Three</span>
-                  </el-menu-item>
-                  <el-menu-item index="4">
-                    <el-icon><setting /></el-icon>
-                    <span>Navigator Four</span>
-                  </el-menu-item>
+                  <!-- 数据分析 -->
+                  <el-sub-menu index="2">
+                    <template #title>
+                      <el-icon><location /></el-icon>
+                      <span>数据分析</span>
+                    </template>
+                    <el-menu-item index="2-1">可视化分析</el-menu-item>
+                    <el-menu-item index="2-2">精度评估</el-menu-item>
+                  </el-sub-menu>
+                  <!-- 数据管理 -->
+                  <el-sub-menu index="3">
+                    <template #title>
+                      <el-icon><location /></el-icon>
+                      <span>数据管理</span>
+                    </template>
+                    <el-menu-item index="3-1">站点数据</el-menu-item>
+                    <el-menu-item index="3-2">数据上传</el-menu-item>
+                    <el-menu-item index="3-3">数据下载</el-menu-item>
+                  </el-sub-menu>
                 </el-menu>
               </el-col>
             </el-row>
+          </div>
+          <!-- 新建项目弹窗 -->
+          <div v-if="showProjectModal" class="project-modal">
+            <CreateNewProject @close="closeCreateProject" />
           </div>
         </el-main>
       </el-container>
@@ -64,23 +71,23 @@ import {
   Location,
   Setting,
 } from "@element-plus/icons-vue";
+import CreateNewProject from "../ProjectManagement/CreateNewProject.vue";
 
 export default {
   name: "Homepage",
+  components: {
+    CreateNewProject,
+  },
   data() {
     return {
       map: null,
-      url: "https://iserver.supermap.io",
       Tianditu: null,
-      China: null,
-      ChinaDark: null,
       Tianditu_road: null,
       baseMaps: {
         Tianditu: null,
-        China: null,
-        ChinaDark: null,
         Tianditu_road: null,
       },
+      showProjectModal: false, // 控制新建项目弹窗显示
     };
   },
   mounted() {
@@ -93,16 +100,14 @@ export default {
     handleClose(key, keyPath) {
       console.log(key, keyPath);
     },
+    showCreateProject() {
+      this.showProjectModal = true;
+    },
+    closeCreateProject() {
+      this.showProjectModal = false;
+    },
     // 使用id为map的div容器初始化地图
     initMap() {
-      this.China = new L.supermap.TiledMapLayer(
-        this.url + "/iserver/services/map-china400/rest/maps/China",
-        { noWrap: true }
-      );
-      this.ChinaDark = new L.supermap.TiledMapLayer(
-        this.url + "/iserver/services/map-china400/rest/maps/ChinaDark",
-        { noWrap: true }
-      );
       this.Tianditu = new L.supermap.TiandituTileLayer({
         layerType: "img",
         key: "1d109683f4d84198e37a38c442d68311",
@@ -114,8 +119,6 @@ export default {
       });
       this.baseMaps = {
         Tianditu: this.Tianditu,
-        China: this.China,
-        ChinaDark: this.ChinaDark,
         Tianditu_road: this.Tianditu_road,
       };
 
@@ -135,7 +138,29 @@ export default {
 </script>
 
 <style scoped>
-/* 确保侧边栏始终位于地图上方 */
+/* 新建项目弹窗样式 */
+.project-modal {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 2000; /* 确保弹窗在地图和侧边栏上方 */
+  background-color: white;
+  padding: 20px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+  width: 600px; /* 设置弹窗宽度 */
+  height: auto; /* 自动调整高度 */
+}
+.close-btn {
+  margin-top: 10px;
+}
+.map {
+  height: 100%;
+  width: 100%;
+  position: relative;
+}
 .overlay-sidebar {
   position: absolute;
   top: 20px; /* 距离顶部20px */
@@ -151,13 +176,13 @@ export default {
   position: relative; /* 确保地图不会干扰侧边栏的层级 */
 }
 .el-header {
-  background-color: #041d36; /* 浅灰色背景 */
+  background-color: rgb(159.5, 206.5, 255); /* 浅灰色背景 */
   height: 10vh; /* 占页面高度10% */
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: x-large;
-  color: #fff; /* 字体颜色为白色 */
+  color: #1368c9; /* 字体颜色为白色 */
   font-family: "Microsoft YaHei", sans-serif; /* 设置字体为微软雅黑 */
   font-weight: bold; /* 加粗 */
 }
@@ -177,6 +202,6 @@ export default {
   width: 250px;
   min-height: 400px;
   border-radius: 2%;
-  border: #545c64;
+  /* border: #545c64; */
 }
 </style>
