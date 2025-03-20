@@ -9,7 +9,7 @@
           <div class="overlay-sidebar" style="margin-top: 50px">
             <el-row class="tac">
               <el-col :span="12">
-                <h5 class="mb-2">Default colors</h5>
+                <h5 class="mb-2"></h5>
                 <el-menu
                   default-active="2"
                   class="el-menu-vertical-demo"
@@ -46,7 +46,9 @@
                       <el-icon><location /></el-icon>
                       <span>数据管理</span>
                     </template>
-                    <el-menu-item index="3-1">站点数据</el-menu-item>
+                    <el-menu-item index="3-1" @click="openSitesData"
+                      >站点数据</el-menu-item
+                    >
                     <el-menu-item index="3-2">数据上传</el-menu-item>
                     <el-menu-item index="3-3">数据下载</el-menu-item>
                   </el-sub-menu>
@@ -57,6 +59,10 @@
           <!-- 新建项目弹窗 -->
           <div v-if="showProjectModal" class="project-modal">
             <CreateNewProject @close="closeCreateProject" />
+          </div>
+          <!-- 站点数据弹窗 -->
+          <div v-if="showSitesDataModal" class="SitesData">
+            <SitesData @close="closeSitesData" />
           </div>
         </el-main>
       </el-container>
@@ -72,11 +78,13 @@ import {
   Setting,
 } from "@element-plus/icons-vue";
 import CreateNewProject from "../ProjectManagement/CreateNewProject.vue";
+import SitesData from "../DataManagement/SitesData.vue";
 
 export default {
   name: "Homepage",
   components: {
     CreateNewProject,
+    SitesData,
   },
   data() {
     return {
@@ -88,6 +96,7 @@ export default {
         Tianditu_road: null,
       },
       showProjectModal: false, // 控制新建项目弹窗显示
+      showSitesDataModal: false, // 控制站点数据弹窗显示
     };
   },
   mounted() {
@@ -99,6 +108,12 @@ export default {
     },
     handleClose(key, keyPath) {
       console.log(key, keyPath);
+    },
+    openSitesData() {
+      this.showSitesDataModal = true; // 打开站点数据弹窗
+    },
+    closeSitesData() {
+      this.showSitesDataModal = false; // 关闭站点数据弹窗
     },
     showCreateProject() {
       this.showProjectModal = true;
@@ -138,6 +153,21 @@ export default {
 </script>
 
 <style scoped>
+/* 站点数据弹窗样式 */
+.SitesData {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 2000; /* 确保弹窗在地图和侧边栏上方 */
+  background-color: white;
+  padding: 20px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+  width: 400px; /* 设置弹窗宽度 */
+  height: auto; /* 自动调整高度 */
+}
 /* 新建项目弹窗样式 */
 .project-modal {
   position: absolute;
