@@ -1,12 +1,36 @@
 <template>
   <div class="common-layout">
     <el-container>
-      <el-header> 径流预测系统 </el-header>
+      <el-header>
+        <!-- 表头组件 -->
+        <el-menu
+          style="flex: 1"
+          :default-active="activeIndex"
+          class="el-menu-demo"
+          mode="horizontal"
+          :ellipsis="false"
+          @select="handleSelect"
+        >
+          <el-menu-item index="0"
+            ><h1 class="title">流域径流预测系统</h1></el-menu-item
+          >
+          <div class="flex-grow"></div>
+          <!-- 添加占位符以推送菜单项到右边 -->
+          <el-menu-item index="1">关于我们</el-menu-item>
+          <el-menu-item index="2">使用指南</el-menu-item>
+          <el-menu-item index="3">项目中心</el-menu-item>
+          <el-menu-item index="4">用户管理</el-menu-item>
+        </el-menu></el-header
+      >
       <el-container>
         <el-main>
           <div id="map" class="map"></div>
           <!-- 确保侧边栏始终位于地图上方 -->
-          <div class="overlay-sidebar" style="margin-top: 50px">
+          <div
+            v-if="showSidebar"
+            class="overlay-sidebar"
+            style="margin-top: 50px"
+          >
             <el-row class="tac">
               <el-col :span="12">
                 <h5 class="mb-2"></h5>
@@ -88,6 +112,8 @@ export default {
   },
   data() {
     return {
+      activeIndex: "1",
+      showSidebar: false, // 控制侧边栏显示
       map: null,
       Tianditu: null,
       Tianditu_road: null,
@@ -103,6 +129,11 @@ export default {
     this.initMap();
   },
   methods: {
+    handleSelect(key, keyPath) {
+      console.log(key, keyPath);
+      // 切换菜单时控制侧边栏显示
+      this.showSidebar = key === "3"; // 仅当点击“项目中心”时显示侧边栏
+    },
     handleOpen(key, keyPath) {
       console.log(key, keyPath);
     },
@@ -152,21 +183,27 @@ export default {
 };
 </script>
 
-<style scoped>
+<style>
+.title {
+  font-size: x-large;
+  color: #1280cf; /* 字体颜色为白色 */
+  font-family: "Microsoft YaHei", sans-serif; /* 设置字体为微软雅黑 */
+  font-weight: bold; /* 加粗 */
+}
+.flex-grow {
+  flex-grow: 1; /* 占据剩余空间 */
+}
+
 /* 站点数据弹窗样式 */
 .SitesData {
   position: absolute;
   top: 50%;
-  left: 50%;
+  left: 60%;
   transform: translate(-50%, -50%);
   z-index: 2000; /* 确保弹窗在地图和侧边栏上方 */
-  background-color: white;
-  padding: 20px;
+
   border: 1px solid #ccc;
   border-radius: 8px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
-  width: 400px; /* 设置弹窗宽度 */
-  height: auto; /* 自动调整高度 */
 }
 /* 新建项目弹窗样式 */
 .project-modal {
@@ -175,7 +212,6 @@ export default {
   left: 50%;
   transform: translate(-50%, -50%);
   z-index: 2000; /* 确保弹窗在地图和侧边栏上方 */
-  background-color: white;
   padding: 20px;
   border: 1px solid #ccc;
   border-radius: 8px;
@@ -206,15 +242,8 @@ export default {
   position: relative; /* 确保地图不会干扰侧边栏的层级 */
 }
 .el-header {
-  background-color: rgb(159.5, 206.5, 255); /* 浅灰色背景 */
-  height: 10vh; /* 占页面高度10% */
+  background-color: rgb(255, 255, 255); /* 浅灰色背景 */
   display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: x-large;
-  color: #1368c9; /* 字体颜色为白色 */
-  font-family: "Microsoft YaHei", sans-serif; /* 设置字体为微软雅黑 */
-  font-weight: bold; /* 加粗 */
 }
 
 .el-aside {

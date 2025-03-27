@@ -7,7 +7,7 @@ spring:
     driver-class-name: com.mysql.cj.jdbc.Driver
     # 修改数据库连接中的 localhost 为 0.0.0.0 或您服务器的局域网 IP 地址
     # url: jdbc:mysql://localhost:3306/microbial_strains
-    url: jdbc:mysql://0.0.0.0:3306/microbial_strains  # 0.0.0.0 或实际局域网 IP
+    url: jdbc:mysql://0.0.0.0:3306/rps  # 0.0.0.0 或实际局域网 IP
     username: root
     password: root
 
