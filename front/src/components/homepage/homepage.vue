@@ -223,6 +223,7 @@ export default {
 }
 /* 新建项目弹窗样式 */
 .project-modal {
+  background-color: #fff;
   position: absolute;
   top: 50%;
   left: 50%;
