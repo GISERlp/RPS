@@ -106,8 +106,7 @@
 </template>
 
 <script>
-import { ref } from "vue";
-import { useRouter } from "vue-router";
+import L from "leaflet";
 import {
   Document,
   Menu as IconMenu,
@@ -129,10 +128,11 @@ export default {
       showSidebar: false, // 控制侧边栏显示
       map: null,
       Tianditu: null,
-      Tianditu_road: null,
+
+      Map4326: null,
       baseMaps: {
         Tianditu: null,
-        Tianditu_road: null,
+        Map4326: null,
       },
       showProjectModal: false, // 控制新建项目弹窗显示
       showSitesDataModal: false, // 控制站点数据弹窗显示
@@ -171,30 +171,29 @@ export default {
     },
     // 使用id为map的div容器初始化地图
     initMap() {
+      this.Map4326 = new L.supermap.TiledMapLayer(
+        "https://iserver.supermap.io/iserver/services/map-world/rest/maps/World"
+      );
       this.Tianditu = new L.supermap.TiandituTileLayer({
         layerType: "img",
         key: "1d109683f4d84198e37a38c442d68311",
       });
-      this.Tianditu_road = new L.supermap.TiandituTileLayer({
-        layerType: "img",
-        isLabel: true,
-        key: "1d109683f4d84198e37a38c442d68311",
-      });
+
       this.baseMaps = {
-        Tianditu: this.Tianditu,
-        Tianditu_road: this.Tianditu_road,
+        天地图影像: this.Tianditu,
+        世界地图: this.Map4326,
       };
 
       this.map = L.map("map", {
-        center: [24.886566, 102.830513], // 中心位置
-        zoom: 11, // 缩放等级
-        zoomControl: false,
-        crs: L.supermap.CRS.TianDiTu_Mercator, // 使用天地图坐标系
-        layers: [this.Tianditu, this.Tianditu_road], // 默认底图
+        center: [29.563, 106.5705], // 中心位置
+        zoom: 4, // 缩放等级
+        maxZoom: 8, // 最大缩放等级
+        zoomControl: false, // 隐藏缩放控件
+        crs: L.CRS.EPSG4326, // 使用天地图坐标系
+        layers: [this.Map4326], // 默认底图
       });
 
       L.control.layers(this.baseMaps).addTo(this.map);
-      // 添加天地图图层
     },
   },
 };
