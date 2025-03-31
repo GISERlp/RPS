@@ -19,7 +19,18 @@
           <el-menu-item index="1">关于我们</el-menu-item>
           <el-menu-item index="2">使用指南</el-menu-item>
           <el-menu-item index="3">项目中心</el-menu-item>
-          <el-menu-item index="4">用户管理</el-menu-item>
+          <el-sub-menu index="4">
+            <template #title>用户管理</template>
+            <el-menu-item index="2-1"
+              >当前用户:
+              <span style="margin-left: 10px; margin-bottom: 1.5px">{{
+                this.username
+              }}</span></el-menu-item
+            >
+            <el-menu-item index="2-2" @click="changeUser"
+              >切换用户</el-menu-item
+            >
+          </el-sub-menu>
         </el-menu></el-header
       >
       <el-container>
@@ -95,6 +106,8 @@
 </template>
 
 <script>
+import { ref } from "vue";
+import { useRouter } from "vue-router";
 import {
   Document,
   Menu as IconMenu,
@@ -123,12 +136,16 @@ export default {
       },
       showProjectModal: false, // 控制新建项目弹窗显示
       showSitesDataModal: false, // 控制站点数据弹窗显示
+      username: this.$route.query.username || "未登录", // 从路由参数中获取用户名
     };
   },
   mounted() {
     this.initMap();
   },
   methods: {
+    changeUser() {
+      this.$router.push("/"); // 跳转到登录页面
+    },
     handleSelect(key, keyPath) {
       console.log(key, keyPath);
       // 切换菜单时控制侧边栏显示
