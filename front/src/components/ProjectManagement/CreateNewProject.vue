@@ -29,7 +29,7 @@
       </el-col>
     </el-row>
     <el-form-item label="预测模型选择">
-      <el-radio-group v-model="form.moodel">
+      <el-radio-group v-model="form.model">
         <el-radio label="HBV" />
         <el-radio label="WISE" />
       </el-radio-group>
@@ -48,6 +48,8 @@
 import { reactive } from "vue";
 import { useRoute } from "vue-router";
 import { defineEmits } from "vue";
+import axios from "axios";
+import { ElMessage, messageConfig } from "element-plus";
 
 const emit = defineEmits(["close"]);
 
@@ -58,13 +60,47 @@ const form = reactive({
   siteId: "",
   startDate: "",
   endDate: "",
-  moodel: "",
+  model: "",
   desc: "",
 });
 
-const onSubmit = () => {
-  console.log("submit!");
+const onSubmit = async () => {
+  try {
+    // 检查日期有效性
+    if (!form.startDate || !form.endDate) {
+      ElMessage.error("请填写完整的时间起点和终点!");
+      return;
+    }
+
+    // 格式化数据为后端要求的格式
+    const payload = {
+      userName: form.user,
+      projectName: form.projectName,
+      siteId: form.siteId,
+      model: form.model,
+      startDate: new Date(form.startDate).toISOString(), // 转换为 ISO 8601 格式
+      endDate: new Date(form.endDate).toISOString(), // 转换为 ISO 8601 格式
+      description: form.desc,
+    };
+
+    const response = await axios.post(
+      "http://localhost:8080/project/create",
+      payload
+    );
+    // 处理响应
+    if (response.data.code == 200) {
+      ElMessage.success("项目创建成功!");
+    } else if (response.data.code == 500) {
+      ElMessage.error("项目已经存在!");
+
+      return;
+    }
+  } catch (error) {
+    ElMessage.error("项目创建失败!");
+    console.error("项目创建失败:", error);
+  }
 };
+
 const onClose = () => {
   // 触发关闭事件
   emit("close");

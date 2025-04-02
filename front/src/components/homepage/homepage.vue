@@ -60,10 +60,15 @@
                     <el-menu-item index="1-1" @click="showCreateProject">
                       新建项目
                     </el-menu-item>
-                    <el-sub-menu index="1-2">
+                    <el-sub-menu index="1-2" @Click="fetchProjects">
                       <template #title>项目列表</template>
-                      <el-menu-item index="1-2-1">项目一</el-menu-item>
-                      <el-menu-item index="1-2-2">项目二</el-menu-item>
+                      <el-menu-item
+                        v-for="(project, index) in projectList"
+                        :key="index"
+                        :index="'1-2-' + (index + 1)"
+                      >
+                        {{ project }}
+                      </el-menu-item>
                     </el-sub-menu>
                   </el-sub-menu>
                   <!-- 数据分析 -->
@@ -128,7 +133,6 @@ export default {
       showSidebar: false, // 控制侧边栏显示
       map: null,
       Tianditu: null,
-
       Map4326: null,
       baseMaps: {
         Tianditu: null,
@@ -137,10 +141,12 @@ export default {
       showProjectModal: false, // 控制新建项目弹窗显示
       showSitesDataModal: false, // 控制站点数据弹窗显示
       username: this.$route.query.username || "未登录", // 从路由参数中获取用户名
+      projectList: [], // 存储项目列表
     };
   },
   mounted() {
     this.initMap();
+    this.fetchProjects(); // 调用接口获取项目列表
   },
   methods: {
     changeUser() {
@@ -167,7 +173,22 @@ export default {
       this.showProjectModal = true;
     },
     closeCreateProject() {
-      this.showProjectModal = false;
+      this.showProjectModal = false; // 关闭新建项目弹窗
+    },
+    async fetchProjects() {
+      try {
+        const response = await fetch(
+          `http://localhost:8080/project/getByUserNameAndProjectName?userName=${this.username}`
+        );
+        if (response.ok) {
+          const data = await response.json();
+          this.projectList = data.map((project) => project.projectName); // 提取项目名
+        } else {
+          console.error("Failed to fetch projects:", response.statusText);
+        }
+      } catch (error) {
+        console.error("Error fetching projects:", error);
+      }
     },
     // 使用id为map的div容器初始化地图
     initMap() {
@@ -179,21 +200,82 @@ export default {
         key: "1d109683f4d84198e37a38c442d68311",
       });
 
+      // 添加在线图层
+      const Aasia_river_10 = L.tileLayer.wms(
+        "http://172.21.187.93:7071/geoserver/SEIMS/wms",
+        {
+          layers: "SEIMS:asia_river_10",
+          format: "image/png",
+          transparent: true,
+          noWarp: true,
+        }
+      );
+
+      const Northamerica_river_10_shp = L.tileLayer.wms(
+        "http://172.21.187.93:7071/geoserver/SEIMS/wms",
+        {
+          layers: "SEIMS:northamerica_river_10_shp",
+          format: "image/png",
+          transparent: true,
+          noWarp: true,
+        }
+      );
+
+      const Southamerica_river_10_shp = L.tileLayer.wms(
+        "http://172.21.187.93:7071/geoserver/SEIMS/wms",
+        {
+          layers: "SEIMS:southamerica_river_10_shp",
+          format: "image/png",
+          transparent: true,
+          noWarp: true,
+        }
+      );
+
+      const Africa_river_12_shp = L.tileLayer.wms(
+        "http://172.21.187.93:7071/geoserver/SEIMS/wms",
+        {
+          layers: "SEIMS:africa_river_12_shp",
+          format: "image/png",
+          transparent: true,
+          noWarp: true,
+        }
+      );
+
+      const Europe_river_10_shp = L.tileLayer.wms(
+        "http://172.21.187.93:7071/geoserver/SEIMS/wms",
+        {
+          layers: "SEIMS:europe_river_10_shp",
+          format: "image/png",
+          transparent: true,
+          noWarp: true,
+        }
+      );
+
       this.baseMaps = {
         天地图影像: this.Tianditu,
         世界地图: this.Map4326,
+      };
+
+      const overlayMaps = {
+        亚洲河流: Aasia_river_10,
+        北美洲河流: Northamerica_river_10_shp,
+        南美洲河流: Southamerica_river_10_shp,
+        非洲河流: Africa_river_12_shp,
+        欧洲河流: Europe_river_10_shp,
       };
 
       this.map = L.map("map", {
         center: [29.563, 106.5705], // 中心位置
         zoom: 4, // 缩放等级
         maxZoom: 8, // 最大缩放等级
+        minZoom: 2, // 设置最小缩放级别
         zoomControl: false, // 隐藏缩放控件
         crs: L.CRS.EPSG4326, // 使用天地图坐标系
         layers: [this.Map4326], // 默认底图
       });
 
-      L.control.layers(this.baseMaps).addTo(this.map);
+      // 添加图层控制
+      L.control.layers(this.baseMaps, overlayMaps).addTo(this.map);
     },
   },
 };
@@ -256,7 +338,7 @@ export default {
 .map {
   height: 100%;
   width: 100%;
-  position: relative; /* 确保地图不会干扰侧边栏的层级 */
+  position: absolute; /* 确保地图不会干扰侧边栏的层级 */
 }
 .el-header {
   background-color: rgb(255, 255, 255); /* 浅灰色背景 */
