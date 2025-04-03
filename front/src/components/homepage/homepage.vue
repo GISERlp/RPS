@@ -112,10 +112,11 @@
 
 <script>
 import L from "leaflet";
+import axios from "axios";
 import {
   Document,
   Menu as IconMenu,
-  Location,
+  Location, // 确保引入 Location 图标
   Setting,
 } from "@element-plus/icons-vue";
 import CreateNewProject from "../ProjectManagement/CreateNewProject.vue";
@@ -126,9 +127,11 @@ export default {
   components: {
     CreateNewProject,
     SitesData,
+    Location, // 注册 Location 组件
   },
   data() {
     return {
+      coordinates: [],
       activeIndex: "1",
       showSidebar: false, // 控制侧边栏显示
       map: null,
@@ -145,36 +148,90 @@ export default {
     };
   },
   mounted() {
-    this.initMap();
     this.fetchProjects(); // 调用接口获取项目列表
+    this.getSitesData().then(() => {
+      this.initMap(); // 确保站点数据加载完成后初始化地图
+    });
   },
   methods: {
+    //获取所有站点信息用于地图显示
+    async getSitesData() {
+      try {
+        const response = await axios.get(
+          "http://localhost:8080/sitesdata?siteId="
+        );
+        if (response.data) {
+          // 按行分割数据并过滤掉空行
+          this.coordinates = response.data
+            .split("\n")
+            .filter((line) => line.trim() !== "") // 过滤空行
+            .map((line) => {
+              const [
+                SiteID,
+                Latitude,
+                Longitude,
+                Elevation,
+                Slope,
+                Area_Gages2,
+                Area_GeoSpaFabric,
+              ] = line.split(",");
+              if (!SiteID || !Latitude || !Longitude) {
+                console.warn("跳过无效数据行:", line);
+                return null; // 跳过无效行
+              }
+              return {
+                name: SiteID.trim(),
+                lat: parseFloat(Latitude.trim()),
+                lng: parseFloat(Longitude.trim()),
+                elevation: parseFloat(Elevation?.trim() || 0),
+                slope: parseFloat(Slope?.trim() || 0),
+                areaGages2: parseFloat(Area_Gages2?.trim() || 0),
+                areaGeoSpaFabric: parseFloat(Area_GeoSpaFabric?.trim() || 0),
+              };
+            })
+            .filter((site) => site !== null); // 过滤掉无效行
+          console.log("站点数据:", this.coordinates); // 确保日志打印
+        } else {
+          console.error("站点数据为空");
+        }
+      } catch (error) {
+        console.error("获取站点数据失败:", error);
+      }
+    },
+    // 切换用户
     changeUser() {
       this.$router.push("/"); // 跳转到登录页面
     },
+    // 切换功能区
     handleSelect(key, keyPath) {
       console.log(key, keyPath);
       // 切换菜单时控制侧边栏显示
       this.showSidebar = key === "3"; // 仅当点击“项目中心”时显示侧边栏
     },
+    // 处理菜单打开和关闭事件
     handleOpen(key, keyPath) {
       console.log(key, keyPath);
     },
     handleClose(key, keyPath) {
       console.log(key, keyPath);
     },
+    // 打开站点数据弹窗
     openSitesData() {
-      this.showSitesDataModal = true; // 打开站点数据弹窗
+      this.showSitesDataModal = true;
     },
+    // 关闭站点数据弹窗
     closeSitesData() {
-      this.showSitesDataModal = false; // 关闭站点数据弹窗
+      this.showSitesDataModal = false;
     },
+    // 显示新建项目弹窗
     showCreateProject() {
       this.showProjectModal = true;
     },
+    // 关闭新建项目弹窗
     closeCreateProject() {
-      this.showProjectModal = false; // 关闭新建项目弹窗
+      this.showProjectModal = false;
     },
+    // 获取项目列表
     async fetchProjects() {
       try {
         const response = await fetch(
@@ -265,13 +322,55 @@ export default {
       };
 
       this.map = L.map("map", {
-        center: [29.563, 106.5705], // 中心位置
-        zoom: 4, // 缩放等级
+        center: [36.81503, -98.64814], // 中心位置
+        zoom: 3, // 缩放等级
         maxZoom: 8, // 最大缩放等级
         minZoom: 2, // 设置最小缩放级别
         zoomControl: false, // 隐藏缩放控件
-        crs: L.CRS.EPSG4326, // 使用天地图坐标系
+        crs: L.CRS.EPSG4326,
         layers: [this.Map4326], // 默认底图
+      });
+      // 添加标记点
+      const coordinates = this.coordinates; // 使用 data 中的 coordinates
+      coordinates.forEach((coord) => {
+        const marker = L.marker([coord.lat, coord.lng]).addTo(this.map);
+        // 设置弹窗内容
+        marker.bindPopup(`
+          <table style="border-collapse: collapse; width: 100%; font-size: 14px; text-align: center; font-family: 'Microsoft YaHei', 'Times New Roman', sans-serif;">
+            <tr>
+              <th style="border: 1px solid #ddd; padding: 8px; text-align: center;">属性</th>
+              <th style="border: 1px solid #ddd; padding: 8px; text-align: center;">值</th>
+            </tr>
+            <tr>
+              <td style="border: 1px solid #ddd; padding: 8px;">站点编号</td>
+              <td style="border: 1px solid #ddd; padding: 8px;"><b>${coord.name}</b></td>
+            </tr>
+            <tr>
+              <td style="border: 1px solid #ddd; padding: 8px;">纬度</td>
+              <td style="border: 1px solid #ddd; padding: 8px;">${coord.lat}</td>
+            </tr>
+            <tr>
+              <td style="border: 1px solid #ddd; padding: 8px;">经度</td>
+              <td style="border: 1px solid #ddd; padding: 8px;">${coord.lng}</td>
+            </tr>
+            <tr>
+              <td style="border: 1px solid #ddd; padding: 8px;">海拔</td>
+              <td style="border: 1px solid #ddd; padding: 8px;">${coord.elevation} 米</td>
+            </tr>
+            <tr>
+              <td style="border: 1px solid #ddd; padding: 8px;">坡度</td>
+              <td style="border: 1px solid #ddd; padding: 8px;">${coord.slope}</td>
+            </tr>
+            <tr>
+              <td style="border: 1px solid #ddd; padding: 8px;">流域面积 (Gages2)</td>
+              <td style="border: 1px solid #ddd; padding: 8px;">${coord.areaGages2} km²</td>
+            </tr>
+            <tr>
+              <td style="border: 1px solid #ddd; padding: 8px;">流域面积 (GeoSpaFabric)</td>
+              <td style="border: 1px solid #ddd; padding: 8px;">${coord.areaGeoSpaFabric} km²</td>
+            </tr>
+          </table>
+        `);
       });
 
       // 添加图层控制

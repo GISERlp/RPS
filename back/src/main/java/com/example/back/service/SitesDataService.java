@@ -51,7 +51,7 @@ public class SitesDataService {
                               .append(areaGeoSpaFabric).append("\n");
 
                         // 打印查询到的数据
-                        System.out.println("SiteID: " + siteId + ", Latitude: " + latitude + ", Longitude: " + longitude + ", Elevation: " + elevation + ", Slope: " + slope + ", Area_Gages2: " + areaGages2 + ", Area_GeoSpaFabric: " + areaGeoSpaFabric);
+//                        System.out.println("SiteID: " + siteId + ", Latitude: " + latitude + ", Longitude: " + longitude + ", Elevation: " + elevation + ", Slope: " + slope + ", Area_Gages2: " + areaGages2 + ", Area_GeoSpaFabric: " + areaGeoSpaFabric);
                     }
                     if (!hasData) {
                         System.out.println("No data found for site ID: " + SiteId); // 新增日志
