@@ -12,7 +12,7 @@
           @select="handleSelect"
         >
           <el-menu-item index="0"
-            ><h1 class="title">流域径流预测系统</h1></el-menu-item
+            ><h1 class="title">径流预测系统</h1></el-menu-item
           >
           <div class="flex-grow"></div>
           <!-- 添加占位符以推送菜单项到右边 -->
@@ -22,11 +22,18 @@
           <el-sub-menu index="4">
             <template #title>用户管理</template>
             <el-menu-item index="2-1"
-              >当前用户:
+              >当前用户:<el-avatar
+                style="
+                  margin-left: 20px;
+                  margin-right: 10px;
+                  margin-bottom: 1.5px;
+                "
+                src="https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png"
+              />
               <span style="margin-left: 10px; margin-bottom: 1.5px">{{
                 this.username
-              }}</span></el-menu-item
-            >
+              }}</span>
+            </el-menu-item>
             <el-menu-item index="2-2" @click="changeUser"
               >切换用户</el-menu-item
             >
@@ -34,9 +41,9 @@
         </el-menu></el-header
       >
       <el-container>
-        <el-main>
+        <el-main class="el-main_homepage">
           <div id="map" class="map"></div>
-          <!-- 确保侧边栏始终位于地图上方 -->
+          <!-- 侧边栏-->
           <div
             v-if="showSidebar"
             class="overlay-sidebar"
@@ -54,7 +61,7 @@
                   <!-- 项目管理 -->
                   <el-sub-menu index="1">
                     <template #title>
-                      <el-icon><location /></el-icon>
+                      <el-icon><icon-menu /></el-icon>
                       <span>项目管理</span>
                     </template>
                     <el-menu-item index="1-1" @click="showCreateProject">
@@ -66,15 +73,34 @@
                         v-for="(project, index) in projectList"
                         :key="index"
                         :index="'1-2-' + (index + 1)"
+                        style="
+                          display: flex;
+                          justify-content: space-between;
+                          align-items: center;
+                        "
                       >
-                        {{ project }}
+                        <span
+                          style="
+                            width: 100px;
+                            white-space: nowrap;
+                            overflow: hidden;
+                            text-overflow: ellipsis;
+                          "
+                          >{{ project }}</span
+                        >
+                        <el-icon style="margin-left: 5px"
+                          ><icon-menu @click="openProject(project)"
+                        /></el-icon>
+                        <el-icon class="close-icon"
+                          ><Delete @click="deleteProject(project)"
+                        /></el-icon>
                       </el-menu-item>
                     </el-sub-menu>
                   </el-sub-menu>
                   <!-- 数据分析 -->
                   <el-sub-menu index="2">
                     <template #title>
-                      <el-icon><location /></el-icon>
+                      <el-icon><Histogram /></el-icon>
                       <span>数据分析</span>
                     </template>
                     <el-menu-item index="2-1">可视化分析</el-menu-item>
@@ -83,7 +109,7 @@
                   <!-- 数据管理 -->
                   <el-sub-menu index="3">
                     <template #title>
-                      <el-icon><location /></el-icon>
+                      <el-icon><Management /></el-icon>
                       <span>数据管理</span>
                     </template>
                     <el-menu-item index="3-1" @click="openSitesData"
@@ -97,12 +123,20 @@
             </el-row>
           </div>
           <!-- 新建项目弹窗 -->
-          <div v-if="showProjectModal" class="project-modal">
+          <div v-if="showNewProjectModal" class="project-modal">
             <CreateNewProject @close="closeCreateProject" />
           </div>
           <!-- 站点数据弹窗 -->
           <div v-if="showSitesDataModal" class="SitesData">
             <SitesData @close="closeSitesData" />
+          </div>
+          <!-- 项目属性弹窗 -->
+          <div v-if="showProjectModal" class="Project">
+            <Project
+              :currentProject="currentProject"
+              :username="username"
+              @close="closeProjectModal"
+            />
           </div>
         </el-main>
       </el-container>
@@ -114,23 +148,37 @@
 import L from "leaflet";
 import axios from "axios";
 import {
+  Management,
+  Histogram,
+  Close,
   Document,
   Menu as IconMenu,
   Location, // 确保引入 Location 图标
   Setting,
+  Delete,
 } from "@element-plus/icons-vue";
 import CreateNewProject from "../ProjectManagement/CreateNewProject.vue";
+import Project from "../ProjectManagement/Project.vue";
 import SitesData from "../DataManagement/SitesData.vue";
+import { de } from "element-plus/es/locales.mjs";
 
 export default {
   name: "Homepage",
   components: {
+    Histogram,
+    Project,
     CreateNewProject,
     SitesData,
-    Location, // 注册 Location 组件
+    Location,
+    Delete,
+    Close,
+    IconMenu,
+    Management, // 注册 Location 组件
   },
   data() {
     return {
+      username: this.$route.query.username || "未登录", // 从路由参数中获取当前用户名
+      currentProject: "", // 当前项目名称
       coordinates: [],
       activeIndex: "1",
       showSidebar: false, // 控制侧边栏显示
@@ -141,9 +189,11 @@ export default {
         Tianditu: null,
         Map4326: null,
       },
-      showProjectModal: false, // 控制新建项目弹窗显示
+
+      showProjectModal: false, //控制项目
+      showNewProjectModal: false, // 控制新建项目弹窗显示
       showSitesDataModal: false, // 控制站点数据弹窗显示
-      username: this.$route.query.username || "未登录", // 从路由参数中获取用户名
+
       projectList: [], // 存储项目列表
     };
   },
@@ -154,6 +204,49 @@ export default {
     });
   },
   methods: {
+    // 关闭项目属性
+    closeProjectModal() {
+      this.showProjectModal = false;
+    },
+    // 打开项目属性
+    openProject(project) {
+      this.showProjectModal = true;
+      this.currentProject = project; // 保存当前项目名称
+    },
+    // 删除项目
+    deleteProject(projectName) {
+      this.$confirm(`确定要删除项目 "${projectName}" 吗？`, "提示", {
+        confirmButtonText: "确定",
+        cancelButtonText: "取消",
+        type: "warning",
+      })
+        .then(async () => {
+          try {
+            const response = await axios.delete(
+              `http://localhost:8080/project/delete`,
+              {
+                params: {
+                  userName: this.username, // 当前用户名
+                  projectName: projectName, // 要删除的项目名
+                },
+              }
+            );
+
+            if (response.status === 200) {
+              this.$message.success(`项目 "${projectName}" 删除成功`);
+              this.fetchProjects(); // 重新获取项目列表
+            } else {
+              this.$message.error(`删除失败: ${response.data.message}`);
+            }
+          } catch (error) {
+            console.error("删除项目失败:", error);
+            this.$message.error("删除项目失败，请检查网络或接口状态");
+          }
+        })
+        .catch(() => {
+          this.$message.info("已取消删除");
+        });
+    },
     //获取所有站点信息用于地图显示
     async getSitesData() {
       try {
@@ -225,11 +318,11 @@ export default {
     },
     // 显示新建项目弹窗
     showCreateProject() {
-      this.showProjectModal = true;
+      this.showNewProjectModal = true;
     },
     // 关闭新建项目弹窗
     closeCreateProject() {
-      this.showProjectModal = false;
+      this.showNewProjectModal = false;
     },
     // 获取项目列表
     async fetchProjects() {
@@ -257,8 +350,17 @@ export default {
         key: "1d109683f4d84198e37a38c442d68311",
       });
 
-      // 添加在线图层
-      const Aasia_river_10 = L.tileLayer.wms(
+      // 添加在线图层，增加错误处理
+      const createWmsLayer = (url, options) => {
+        try {
+          return L.tileLayer.wms(url, options);
+        } catch (error) {
+          console.error(`加载图层失败: ${options.layers}`, error);
+          return null; // 返回空图层以避免崩溃
+        }
+      };
+
+      const Aasia_river_10 = createWmsLayer(
         "http://172.21.187.93:7071/geoserver/SEIMS/wms",
         {
           layers: "SEIMS:asia_river_10",
@@ -268,7 +370,7 @@ export default {
         }
       );
 
-      const Northamerica_river_10_shp = L.tileLayer.wms(
+      const Northamerica_river_10_shp = createWmsLayer(
         "http://172.21.187.93:7071/geoserver/SEIMS/wms",
         {
           layers: "SEIMS:northamerica_river_10_shp",
@@ -278,7 +380,7 @@ export default {
         }
       );
 
-      const Southamerica_river_10_shp = L.tileLayer.wms(
+      const Southamerica_river_10_shp = createWmsLayer(
         "http://172.21.187.93:7071/geoserver/SEIMS/wms",
         {
           layers: "SEIMS:southamerica_river_10_shp",
@@ -288,7 +390,7 @@ export default {
         }
       );
 
-      const Africa_river_12_shp = L.tileLayer.wms(
+      const Africa_river_12_shp = createWmsLayer(
         "http://172.21.187.93:7071/geoserver/SEIMS/wms",
         {
           layers: "SEIMS:africa_river_12_shp",
@@ -298,7 +400,7 @@ export default {
         }
       );
 
-      const Europe_river_10_shp = L.tileLayer.wms(
+      const Europe_river_10_shp = createWmsLayer(
         "http://172.21.187.93:7071/geoserver/SEIMS/wms",
         {
           layers: "SEIMS:europe_river_10_shp",
@@ -313,12 +415,15 @@ export default {
         世界地图: this.Map4326,
       };
 
+      // 创建标记点图层
+      const markersLayer = L.layerGroup();
       const overlayMaps = {
-        亚洲河流: Aasia_river_10,
-        北美洲河流: Northamerica_river_10_shp,
-        南美洲河流: Southamerica_river_10_shp,
-        非洲河流: Africa_river_12_shp,
-        欧洲河流: Europe_river_10_shp,
+        亚洲河流: Aasia_river_10 || L.layerGroup(), // 使用空图层作为备用
+        北美洲河流: Northamerica_river_10_shp || L.layerGroup(),
+        南美洲河流: Southamerica_river_10_shp || L.layerGroup(),
+        非洲河流: Africa_river_12_shp || L.layerGroup(),
+        欧洲河流: Europe_river_10_shp || L.layerGroup(),
+        水文站点: markersLayer,
       };
 
       this.map = L.map("map", {
@@ -330,10 +435,13 @@ export default {
         crs: L.CRS.EPSG4326,
         layers: [this.Map4326], // 默认底图
       });
+
+      // 将标记点图层添加到地图
+      markersLayer.addTo(this.map);
       // 添加标记点
       const coordinates = this.coordinates; // 使用 data 中的 coordinates
       coordinates.forEach((coord) => {
-        const marker = L.marker([coord.lat, coord.lng]).addTo(this.map);
+        const marker = L.marker([coord.lat, coord.lng]).addTo(markersLayer);
         // 设置弹窗内容
         marker.bindPopup(`
           <table style="border-collapse: collapse; width: 100%; font-size: 14px; text-align: center; font-family: 'Microsoft YaHei', 'Times New Roman', sans-serif;">
@@ -390,6 +498,22 @@ export default {
 .flex-grow {
   flex-grow: 1; /* 占据剩余空间 */
 }
+.Project {
+  height: 450px;
+  width: 700px;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 2000; /* 确保弹窗在地图和侧边栏上方 */
+  background-color: #fff;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  /* 添加 flexbox 布局 */
+  display: flex;
+  justify-content: center; /* 水平居中 */
+  align-items: center; /* 垂直居中 */
+}
 
 /* 站点数据弹窗样式 */
 .SitesData {
@@ -420,11 +544,7 @@ export default {
 .close-btn {
   margin-top: 10px;
 }
-.map {
-  height: 100%;
-  width: 100%;
-  position: relative;
-}
+
 .overlay-sidebar {
   position: absolute;
   top: 20px; /* 距离顶部20px */
@@ -437,7 +557,7 @@ export default {
 .map {
   height: 100%;
   width: 100%;
-  position: absolute; /* 确保地图不会干扰侧边栏的层级 */
+  position: absolute;
 }
 .el-header {
   background-color: rgb(255, 255, 255); /* 浅灰色背景 */
@@ -445,14 +565,13 @@ export default {
 }
 
 .el-aside {
-  /* background-color: #337ecc; */
-  height: 90vh; /* 占页面高度90% */
+  height: 90vh;
 }
 
-.el-main {
-  padding: 0px;
-  background-color: #147ae1; /* 浅黄色背景 */
-  height: 90vh; /* 占页面高度90% */
+.el-main_homepage {
+  padding: 0 0 0 0px;
+  background-color: #edf0f3;
+  /* height: 90vh;  */
 }
 
 .el-menu-vertical-demo {
@@ -460,5 +579,10 @@ export default {
   min-height: 400px;
   border-radius: 2%;
   /* border: #545c64; */
+}
+/* 删除项目是的叉号变色 */
+.close-icon:hover {
+  color: #95d475; /* 鼠标悬浮时的颜色 */
+  cursor: pointer; /* 鼠标悬浮时显示手型指针 */
 }
 </style>

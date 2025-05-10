@@ -64,7 +64,7 @@ public class SitesDataService {
             System.out.println("Error occurred while querying database: " + e.getMessage()); // 修改日志
             return "Error occurred while querying database.";
         }
-        System.out.println("Returning result: " + result.toString()); // 新增日志
+//        System.out.println("Returning result: " + result.toString()); // 新增日志
         return result.toString();
     }
 }

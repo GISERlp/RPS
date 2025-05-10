@@ -75,7 +75,8 @@
 import axios from "axios";
 import dayjs from "dayjs";
 import RainfallFlowChart from "@/views/RainfallFlowChart.vue"; // 引入图表组件
-
+import { h } from "vue";
+import { ElNotification } from "element-plus";
 export default {
   name: "SitesData",
   components: {
@@ -128,6 +129,10 @@ export default {
       const { siteId, region, startDate, endDate } = this.formInline;
 
       if (!siteId) {
+        ElNotification({
+          title: "工作消息",
+          message: h("i", { style: "color: teal" }, "站点编号不能为空!"),
+        });
         console.error("站点编号不能为空");
         return;
       }
@@ -140,6 +145,10 @@ export default {
         : "";
 
       try {
+        ElNotification({
+          title: "工作消息",
+          message: h("i", { style: "color: teal" }, "查询到站点数据!"),
+        });
         const response = await axios.get("http://localhost:8080/streamflow", {
           params: {
             siteId,
@@ -162,9 +171,17 @@ export default {
             value: parseFloat(value),
           }));
         } else {
+          ElNotification({
+            title: "工作消息",
+            message: h("i", { style: "color: teal" }, "查询失败!"),
+          });
           console.error("返回数据格式错误");
         }
       } catch (error) {
+        ElNotification({
+          title: "工作消息",
+          message: h("i", { style: "color: teal" }, "查询失败!"),
+        });
         console.error("查询失败:", error);
       }
     },

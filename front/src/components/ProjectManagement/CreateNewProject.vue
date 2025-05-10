@@ -3,7 +3,7 @@
     <el-form-item label="项目名称 ">
       <el-input v-model="form.projectName" placeholder="请输入项目名称" />
     </el-form-item>
-    <el-form-item label="水文站点编号">
+    <el-form-item label="站点编号">
       <el-input v-model="form.siteId" placeholder="请输入站点编号" />
     </el-form-item>
     <el-row>
