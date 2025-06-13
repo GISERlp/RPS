@@ -33,8 +33,4 @@ export default {
 };
 </script>
 
-<style scoped>
-.map {
-  /* Add your styles here */
-}
-</style>
+<style scoped></style>
